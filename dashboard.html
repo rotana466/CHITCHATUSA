@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChitChat</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#0b0b0b;
+color:white;
+padding-bottom:90px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px;
+font-size:24px;
+font-weight:bold;
+}
+
+.icons{
+display:flex;
+gap:20px;
+font-size:24px;
+}
+
+.greeting{
+text-align:center;
+padding:10px;
+}
+
+.greeting h1{
+font-size:40px;
+margin-top:10px;
+}
+
+/* --- ACTIVE SEARCH CONTAINER MODS --- */
+.search-container {
+position: relative;
+margin: 20px;
+}
+
+.search-wrapper {
+display: flex;
+background: #1c1c1c;
+border-radius: 15px;
+padding: 5px 10px;
+align-items: center;
+border: 1px solid transparent;
+transition: border 0.3s ease;
+}
+
+.search-wrapper:focus-within {
+border-color: #28c840;
+}
+
+.search-input {
+flex: 1;
+background: transparent;
+border: none;
+outline: none;
+color: white;
+padding: 10px;
+font-size: 16px;
+}
+
+.search-input::placeholder {
+color: #888;
+}
+
+.search-btn {
+background: #28c840;
+color: white;
+border: none;
+outline: none;
+padding: 8px 15px;
+border-radius: 10px;
+font-weight: bold;
+cursor: pointer;
+font-size: 14px;
+-webkit-tap-highlight-color: transparent;
+}
+
+.search-btn:active {
+transform: scale(0.95);
+}
+
+.stories{
+display:flex;
+overflow-x:auto;
+gap:15px;
+padding:15px;
+}
+
+.story{
+min-width:80px;
+text-align:center;
+cursor:pointer;
+}
+
+.story img{
+width:70px;
+height:70px;
+border-radius:50%;
+border:3px solid #28c840;
+object-fit:cover;
+}
+
+.story p{
+margin-top:5px;
+font-size:14px;
+}
+
+/* --- GRID LAYOUT CONTEXT --- */
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+padding:15px;
+}
+
+.card-wrapper {
+position: relative;
+}
+
+.card{
+background:#181818;
+border-radius:20px;
+padding:25px;
+min-height:120px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:22px;
+font-weight:bold;
+text-align:center;
+user-select:none;
+width: 100%;
+height: 100%;
+transition: all 0.3s ease;
+}
+
+.card.clickable {
+cursor: pointer;
+-webkit-tap-highlight-color: transparent;
+}
+
+.card.clickable:active {
+transform: scale(0.95);
+background: #222;
+transition: transform 0.1s ease;
+}
+
+/* Dynamic styling for the connecting state */
+.card.connecting {
+color: #28c840;
+border: 2px solid #28c840;
+box-shadow: 0 0 15px rgba(40, 200, 64, 0.3);
+animation: pulseText 1s infinite alternate;
+}
+
+@keyframes pulseText {
+0% { opacity: 0.7; }
+100% { opacity: 1; }
+}
+
+/* --- EYE CATCHING CUSTOM NOTIFICATIONS --- */
+.custom-popup {
+display: none;
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%) scale(0.8);
+background: rgba(24, 24, 24, 0.95);
+border: 2px solid #28c840;
+box-shadow: 0 0 20px rgba(40, 200, 64, 0.4);
+color: #28c840;
+padding: 15px 20px;
+border-radius: 15px;
+font-size: 14px;
+font-weight: 800;
+letter-spacing: 1px;
+text-align: center;
+z-index: 1000;
+white-space: nowrap;
+opacity: 0;
+transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+pointer-events: none;
+}
+
+.custom-popup.show {
+display: block;
+opacity: 1;
+transform: translate(-50%, -50%) scale(1);
+}
+
+/* Special Floating Overlay positioning context */
+.global-popup-container {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+pointer-events: none;
+z-index: 99999;
+}
+
+.left-align-popup {
+line-height: 1.6;
+text-align: left !important;
+}
+
+/* --- LIVE ACTIVE CHATS SCROLLER LAYOUT --- */
+.recent {
+padding:15px;
+}
+
+.recent h2 {
+margin-bottom:15px;
+font-size:18px;
+letter-spacing: 0.5px;
+}
+
+.chat-scroll-window {
+position: relative;
+height: 320px; 
+overflow: hidden;
+border-radius: 15px;
+background: transparent;
+}
+
+.chat-scroll-track {
+display: flex;
+flex-direction: column;
+gap: 10px;
+animation: scrollUpAndDown 40s linear infinite alternate;
+}
+
+.chat {
+background:#181818;
+padding:15px;
+border-radius:15px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+.chat-info {
+display: flex;
+flex-direction: column;
+}
+
+.chat-name{
+font-weight:bold;
+margin-bottom:5px;
+font-size:16px;
+}
+
+.chat-msg {
+font-size:14px;
+color:#aaa;
+}
+
+.live-status {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.live-dot {
+width: 10px;
+height: 10px;
+background-color: #28c840;
+border-radius: 50%;
+box-shadow: 0 0 8px #28c840;
+animation: blinkDot 1.2s infinite ease-in-out;
+}
+
+.live-text {
+font-size: 11px;
+color: #28c840;
+font-weight: bold;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+}
+
+@keyframes scrollUpAndDown {
+0% { transform: translateY(0); }
+45% { transform: translateY(calc(-100% + 320px)); }
+55% { transform: translateY(calc(-100% + 320px)); }
+100% { transform: translateY(0); }
+}
+
+@keyframes blinkDot {
+0%, 100% { opacity: 0.3; transform: scale(0.9); }
+50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 14px #28c840; }
+}
+
+.bottom-nav{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#121212;
+display:flex;
+justify-content:space-around;
+padding:15px 0;
+border-top:1px solid #333;
+z-index: 100;
+}
+
+.bottom-nav div{
+text-align:center;
+font-size:14px;
+cursor: pointer;
+-webkit-tap-highlight-color: transparent;
+}
+
+.add-btn{
+position:fixed;
+bottom:35px;
+left:50%;
+transform:translateX(-50%);
+width:65px;
+height:65px;
+background:#28c840;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:35px;
+font-weight:bold;
+color:white;
+z-index: 101;
+cursor: pointer;
+-webkit-tap-highlight-color: transparent;
+transition: transform 0.2s;
+}
+
+.add-btn:active {
+transform: translateX(-50%) scale(0.9);
+}
+
+/* --- ADD MENU COMPONENT SLIDE PANEL --- */
+#add-overlay-window {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(11, 11, 11, 0.95);
+    z-index: 999999;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.add-panel-container {
+    background: #181818;
+    border: 1px solid #333;
+    padding: 30px 20px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.add-panel-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.add-panel-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.add-panel-form-row {
+    display: flex;
+    background: #222;
+    border-radius: 12px;
+    padding: 5px;
+    align-items: center;
+    border: 1px solid transparent;
+}
+
+.add-panel-form-row:focus-within {
+    border-color: #28c840;
+}
+
+.add-panel-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.add-panel-continue-btn {
+    background: #28c840;
+    color: white;
+    border: none;
+    outline: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.add-panel-continue-btn:active {
+    transform: scale(0.9);
+}
+
+/* --- ABOUT US FULL SCREEN EMBED STYLING --- */
+#about-us-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at top left,#ff0080 0%,transparent 30%),
+        radial-gradient(circle at top right,#00e5ff 0%,transparent 30%),
+        radial-gradient(circle at bottom left,#7c3aed 0%,transparent 30%),
+        linear-gradient(135deg,#020617,#0f172a,#1e293b);
+    min-height:100vh;
+    display:none;
+    flex-direction: column;
+    justify-content:flex-start;
+    align-items:center;
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 9999999;
+}
+
+.about-header {
+    width: 100%;
+    max-width: 950px;
+    display: flex;
+    justify-content: flex-start;
+    padding: 10px 0 20px 0;
+}
+
+.about-back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 20px;
+    padding: 10px 20px;
+    border-radius: 15px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: background 0.3s;
+}
+
+.about-back-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.about-chitchat{
+    max-width:950px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:30px;
+    padding:45px;
+    color:white;
+    box-shadow:
+    0 0 40px rgba(0,229,255,.3),
+    0 0 80px rgba(255,0,128,.2);
+    animation:float 5s ease-in-out infinite;
+}
+
+@keyframes float{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-8px);}
+}
+
+.about-chitchat h2{
+    text-align:center;
+    font-size:42px;
+    margin-bottom:25px;
+    background:linear-gradient(90deg,#00e5ff,#ffffff,#ff0080);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    text-shadow:0 0 20px rgba(255,255,255,.4);
+}
+
+.about-chitchat p{
+    font-size:18px;
+    line-height:1.9;
+    color:#f8fafc;
+    margin-bottom:18px;
+}
+
+.highlight{
+    color:#00e5ff;
+    font-weight:bold;
+}
+
+.founder{
+    color:#ff66c4;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div>ChitChat</div>
+<div class="icons">
+🔍
+🔔
+</div>
+</div>
+
+<div class="greeting">
+<p>HELLO CHAT!</p>
+<h1></h1>
+</div>
+
+<div class="search-container">
+    <div class="search-wrapper">
+        <input type="text" class="search-input" id="search-friend-input" placeholder="Search Friends...">
+        <button class="search-btn" onclick="executeSearch()">Search</button>
+    </div>
+    <div id="search-popup" class="custom-popup">❌ NO USER FOUND</div>
+</div>
+
+<div class="stories">
+    <div class="story clickable-profile" onclick="openFullChat('https://tawk.to/chat/6a1d5cab08ce291c2c0010c1/1jq1b4074', 'Fransesco Jade Marie')">
+        <img src="https://i.pravatar.cc/150?img=1">
+        <p>FRANSESCO JADE MARIE</p>
+    </div>
+
+    <div class="story" onclick="openFullChat('https://tawk.to/chat/6a3b987a87243e1d38ec1405/1jrscn895', 'Marc Houston')">
+        <img src="https://i.postimg.cc/8zvxThFb/images-19.jpg">
+        <p>MARC HOUSTON</p>
+    </div>
+
+    <div class="story" onclick="openFullChat('https://tawk.to/chat/6a3b987a87243e1d38ec1405/1jrscn895', 'Gilean De Marco')">
+        <img src="https://i.pravatar.cc/150?img=3">
+        <p>GILEAN DE MARCO</p>
+    </div>
+
+    <div class="story" onclick="openFullChat('https://tawk.to/chat/6a3b987a87243e1d38ec1405/1jrscn895', 'Alex')">
+        <img src="https://i.postimg.cc/brKL5B9R/images-23.jpg">
+        <p>Alex</p>
+    </div>
+
+    <div class="story" onclick="openFullChat('https://tawk.to/chat/6a3b987a87243e1d38ec1405/1jrscn895', 'Mc Auley Jackson')">
+        <img src="https://i.postimg.cc/fygf9gPx/IMG-20260624-095337.jpg">
+        <p>MC AULEY JACKSON</p>
+    </div>
+</div>
+
+<div id="full-chat-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; z-index: 999999;">
+    <div style="display: flex; align-items: center; padding: 15px; background: #1f1f1f; border-bottom: 1px solid #333; color: white;">
+        <button onclick="closeFullChat()" style="background: none; border: none; color: #28c840; font-size: 24px; cursor: pointer; margin-right: 15px;">&larr;</button>
+        <span id="chat-user-name" style="font-weight: bold; font-size: 18px;">Chat</span>
+    </div>
+    <iframe id="chat-frame" src="" style="width: 100%; height: calc(100% - 60px); border: none; background: #121212;"></iframe>
+</div>
+
+<div class="grid">
+    <div class="card-wrapper">
+        <div class="card clickable" onclick="showChatsPopup()">💬 Chats</div>
+        <div id="chats-popup" class="custom-popup">💬 TAP TO CHAT</div>
+    </div>
+    
+    <div class="card-wrapper">
+        <div class="card clickable" onclick="showGroupsPopup()">👥 Groups</div>
+        <div id="groups-popup" class="custom-popup">⚠️ NO GROUPS AVAILABLE</div>
+    </div>
+    
+    <div class="card-wrapper">
+        <div class="card clickable" onclick="showCallsPopup()">📞 Calls</div>
+        <div id="calls-popup" class="custom-popup">⚠️ NO CALLS AVAILABLE</div>
+    </div>
+    
+    <div class="card clickable" id="video-card" onclick="triggerVideoConnect()">🎥 Video</div>
+    
+    <div class="card clickable" onclick="openAboutUs()">ℹ️ ABOUT US</div>
+</div>
+
+<div id="about-us-screen">
+    <div class="about-header">
+        <button class="about-back-btn" onclick="closeAboutUs()">&larr; Back</button>
+    </div>
+    <div class="about-chitchat">
+        <h2>Welcome to ChitChat</h2>
+        <p>
+            <span class="highlight">ChitChat</span> is a modern social communication platform founded by
+            <span class="founder">Sir Mc Laughton</span> in the United States with a vision of bringing people together through meaningful conversations and digital interaction.
+        </p>
+        <p>
+            Since its launch, ChitChat has provided a trusted space where users can connect, build friendships, exchange ideas, and create lasting relationships. The platform became especially popular throughout the United States, where most of its users are located.
+        </p>
+        <p>
+            Today, ChitChat has expanded beyond borders and is available worldwide, allowing people from different countries, cultures, and backgrounds to communicate seamlessly in one vibrant community.
+        </p>
+        <p>
+            Our mission is simple: <strong>Connect. Communicate. Belong.</strong> ChitChat continues to grow as a global destination for social interaction, helping people stay connected no matter where they are in the world.
+        </p>
+    </div>
+</div>
+
+<div class="recent">
+<h2>ACTIVE CHATS</h2>
+<div class="chat-scroll-window">
+    <div class="chat-scroll-track">
+        <div class="chat"><div class="chat-info"><div class="chat-name">Liam Smith</div><div class="chat-msg">Hey there! 👋</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Noah Johnson</div><div class="chat-msg">Are you free?</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Oliver Williams</div><div class="chat-msg">Sent a file.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Elijah Brown</div><div class="chat-msg">Good morning! ☀️</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">James Jones</div><div class="chat-msg">Let's connect soon.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">William Garcia</div><div class="chat-msg">Awesome job! 👍</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Benjamin Miller</div><div class="chat-msg">Check this link.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Lucas Davis</div><div class="chat-msg">Where are you?</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Henry Rodriguez</div><div class="chat-msg">Talk to you later.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Theodore Martinez</div><div class="chat-msg">Got it, thanks!</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Alexander Hernandez</div><div class="chat-msg">Almost there.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Michael Lopez</div><div class="chat-msg">Sounds good!</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Ethan Gonzalez</div><div class="chat-msg">Call me later.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Daniel Wilson</div><div class="chat-msg">Let's start.</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+        <div class="chat"><div class="chat-info"><div class="chat-name">Matthew Anderson</div><div class="chat-msg">See you tomorrow!</div></div><div class="live-status"><div class="live-dot"></div><div class="live-text">Live</div></div></div>
+    </div>
+</div>
+</div>
+
+<div class="add-btn" onclick="openAddPanel()">+</div>
+
+<div id="add-overlay-window">
+    <div class="add-panel-container">
+        <button class="add-panel-close" onclick="closeAddPanel()">×</button>
+        <div class="add-panel-title">Add New Friend</div>
+        <div class="add-panel-form-row">
+            <input type="text" class="add-panel-input" id="add-friend-uid" placeholder="Enter User ID...">
+            <button class="add-panel-continue-btn" onclick="executeAddFriendSearch()">&rarr;</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+<div>🏠<br>Home</div>
+<div>💬<br>Chats</div>
+<div onclick="triggerActivitySequence()">🔔<br>Activity</div>
+<div onclick="showProfilePopup()">👤<br>Profile</div>
+</div>
+
+<div class="global-popup-container">
+    <div id="profile-popup" class="custom-popup left-align-popup">
+        USER ID: EK29202392KE<br>
+        COUNTRY: KENYA<br>
+        STATUS: ACTIVE
+    </div>
+    
+    <div id="activity-checking-popup" class="custom-popup">🔄 CHECKING...</div>
+    <div id="activity-final-popup" class="custom-popup left-align-popup">
+        RECENT ACTIVITY: ACTIVE<br>
+        LOCATION: KENYA
+    </div>
+
+    <div id="add-searching-popup" class="custom-popup">🔄 SEARCHING...</div>
+    <div id="add-notfound-popup" class="custom-popup">❌ USER NOT FOUND</div>
+</div>
+
+<script type="text/javascript">
+function openFullChat(chatUrl, profileName) {
+    document.getElementById('chat-user-name').innerText = profileName;
+    document.getElementById('chat-frame').src = chatUrl;
+    document.getElementById('full-chat-screen').style.display = 'block';
+}
+
+function closeFullChat() {
+    document.getElementById('full-chat-screen').style.display = 'none';
+    document.getElementById('chat-frame').src = "";
+}
+
+// About Us Screen Control Routing Logic
+function openAboutUs() {
+    document.getElementById('about-us-screen').style.display = 'flex';
+}
+
+// Open + Add Overlap Layer Form View
+function openAddPanel() {
+    document.getElementById('add-overlay-window').style.display = 'flex';
+    document.getElementById('add-friend-uid').focus();
+}
+
+// Hide + Add Overlap Layer Form View
+function closeAddPanel() {
+    document.getElementById('add-overlay-window').style.display = 'none';
+    document.getElementById('add-friend-uid').value = '';
+}
+
+// Sequential Execution Routine Pipeline for the Add Friend Form Button
+function executeAddFriendSearch() {
+    var searchingPopup = document.getElementById('add-searching-popup');
+    var notFoundPopup = document.getElementById('add-notfound-popup');
+    var inputField = document.getElementById('add-friend-uid');
+    
+    if(searchingPopup.classList.contains('show') || notFoundPopup.classList.contains('show')) return;
+    
+    // Hide the input panel workspace beautifully
+    document.getElementById('add-overlay-window').style.display = 'none';
+    
+    // Step 1: Deploy "SEARCHING..." notice loader status layout
+    searchingPopup.style.display = 'block';
+    setTimeout(function() { searchingPopup.classList.add('show'); }, 10);
+    
+    // Step 2: Transition from search loader frame context into NOT FOUND panel alert frame module
+    setTimeout(function() {
+        searchingPopup.classList.remove('show');
+        setTimeout(function() { searchingPopup.style.display = 'none'; }, 200);
+        
+        setTimeout(function() {
+            notFoundPopup.style.display = 'block';
+            setTimeout(function() { notFoundPopup.classList.add('show'); }, 10);
+            
+            // Clean out inputs completely
+            inputField.value = '';
+            
+            // Step 3: Complete execution loop sequence timeline
+            setTimeout(function() {
+                notFoundPopup.classList.remove('show');
+                setTimeout(function() { notFoundPopup.style.display = 'none'; }, 300);
+            }, 2500);
+        }, 150);
+        
+    }, 1500); // Dynamic latency simulator step duration
+}
+
+function closeAboutUs() {
+    document.getElementById('about-us-screen').style.display = 'none';
+}
+
+// Multi-stage sequential pipeline process for Activity Button
+function triggerActivitySequence() {
+    var checkingPopup = document.getElementById('activity-checking-popup');
+    var finalPopup = document.getElementById('activity-final-popup');
+    
+    if(checkingPopup.classList.contains('show') || finalPopup.classList.contains('show')) return;
+    
+    checkingPopup.style.display = 'block';
+    setTimeout(function() { checkingPopup.classList.add('show'); }, 10);
+    
+    setTimeout(function() {
+        checkingPopup.classList.remove('show');
+        setTimeout(function() { checkingPopup.style.display = 'none'; }, 200);
+        
+        setTimeout(function() {
+            finalPopup.style.display = 'block';
+            setTimeout(function() { finalPopup.classList.add('show'); }, 10);
+            
+            setTimeout(function() {
+                finalPopup.classList.remove('show');
+                setTimeout(function() { finalPopup.style.display = 'none'; }, 300);
+            }, 3000);
+        }, 150);
+        
+    }, 1200);
+}
+
+// Custom Profile popup display trigger logic
+function showProfilePopup() {
+    var popup = document.getElementById('profile-popup');
+    if(popup.classList.contains('show')) return;
+    
+    popup.style.display = 'block';
+    setTimeout(function() { popup.classList.add('show'); }, 10);
+    
+    setTimeout(function() {
+        popup.classList.remove('show');
+        setTimeout(function() { popup.style.display = 'none'; }, 300);
+    }, 3500);
+}
+
+// Custom UI Tooltip display trigger logic for Chats
+function showChatsPopup() {
+    var popup = document.getElementById('chats-popup');
+    if(popup.classList.contains('show')) return;
+    
+    popup.style.display = 'block';
+    setTimeout(function() { popup.classList.add('show'); }, 10);
+    
+    setTimeout(function() {
+        popup.classList.remove('show');
+        setTimeout(function() { popup.style.display = 'none'; }, 300);
+    }, 2500);
+}
+
+// Custom UI Tooltip display trigger logic for Groups
+function showGroupsPopup() {
+    var popup = document.getElementById('groups-popup');
+    if(popup.classList.contains('show')) return;
+    
+    popup.style.display = 'block';
+    setTimeout(function() { popup.classList.add('show'); }, 10);
+    
+    setTimeout(function() {
+        popup.classList.remove('show');
+        setTimeout(function() { popup.style.display = 'none'; }, 300);
+    }, 2500);
+}
+
+// Custom UI Tooltip display trigger logic for Calls
+function showCallsPopup() {
+    var popup = document.getElementById('calls-popup');
+    if(popup.classList.contains('show')) return;
+    
+    popup.style.display = 'block';
+    setTimeout(function() { popup.classList.add('show'); }, 10);
+    
+    setTimeout(function() {
+        popup.classList.remove('show');
+        setTimeout(function() { popup.style.display = 'none'; }, 300);
+    }, 2500);
+}
+
+// Inline Dynamic State Trigger logic for Video Connecting Routine
+function triggerVideoConnect() {
+    var videoCard = document.getElementById('video-card');
+    
+    if(videoCard.classList.contains('connecting')) return;
+    
+    videoCard.innerText = "🔄 CONNECTING...";
+    videoCard.classList.add('connecting');
+    
+    setTimeout(function() {
+        videoCard.classList.remove('connecting');
+        videoCard.innerText = "🎥 Video";
+    }, 4000);
+}
+
+// Search execution routing logic 
+function executeSearch() {
+    var searchInput = document.getElementById('search-friend-input');
+    var popup = document.getElementById('search-popup');
+    
+    if(popup.classList.contains('show')) return;
+    
+    popup.style.display = 'block';
+    setTimeout(function() { popup.classList.add('show'); }, 10);
+    
+    searchInput.value = '';
+    
+    setTimeout(function() {
+        popup.classList.remove('show');
+        setTimeout(function() { popup.style.display = 'none'; }, 300);
+    }, 2500);
+}
+</script>
+</body>
+</html>
